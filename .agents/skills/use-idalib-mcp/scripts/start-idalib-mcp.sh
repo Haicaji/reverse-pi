@@ -22,7 +22,6 @@ fi
 mkdir -p "${TMP_DIR}"
 
 nohup idalib-mcp \
-    --isolated-contexts \
     --host 0.0.0.0 \
     --port "${PORT}" \
     >"${LOG_FILE}" 2>&1 </dev/null &

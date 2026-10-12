@@ -3,7 +3,7 @@
 PORT=8651
 JADX_PORT=8650
 WORK_DIR="$(pwd -P)"
-TMP_DIR="${WORK_DIR}/tmp/jadx-mcp"
+TMP_DIR="${WORK_DIR}/.tmp/jadx-mcp"
 LOG_FILE="${TMP_DIR}/jadx-mcp.log"
 PID_FILE="${TMP_DIR}/jadx-mcp.pid"
 GUI_PID_FILE="${TMP_DIR}/jadx-gui.pid"

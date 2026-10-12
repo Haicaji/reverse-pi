@@ -11,7 +11,7 @@ MCP_HOST="0.0.0.0"
 MCP_PORT=13337
 
 WORK_DIR="$(pwd -P)"
-TMP_DIR="${WORK_DIR}/tmp/ghidra-mcp"
+TMP_DIR="${WORK_DIR}/.tmp/ghidra-mcp"
 
 GHIDRA_LOG="${TMP_DIR}/ghidra-headless.log"
 GHIDRA_PID_FILE="${TMP_DIR}/ghidra-headless.pid"

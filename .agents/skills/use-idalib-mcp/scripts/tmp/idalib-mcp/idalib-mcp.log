@@ -1,0 +1,4 @@
+usage: idalib-mcp [-h] [--verbose] [--stdio] [--host HOST] [--port PORT]
+                  [--unsafe] [--profile PATH] [--max-workers MAX_WORKERS]
+                  [input_path]
+idalib-mcp: error: unrecognized arguments: --isolated-contexts

@@ -1,0 +1,13 @@
+{
+	"mcpServers": {
+		"IDALib-MCP": {
+			"url": "http://127.0.0.1:13336/mcp"
+		},
+		"Jadx-MCP": {
+			"url": "http://127.0.0.1:8651/mcp"
+		},
+		"Ghidra-MCP": {
+			"url": "http://127.0.0.1:13337/mcp"
+		}
+	}
+}

@@ -2,7 +2,9 @@
 
 GHIDRA_HOME="$HOME/Program/ghidra_12.1.3"
 GHIDRA_MCP_DIR="$HOME/MCPServer/ghidra-mcp"
-PYTHON="$HOME/miniconda3/envs/ghidra-mcp/bin/python"
+# Python interpreter used to run the MCP bridge. Defaults to python3 from PATH;
+# replace this with an absolute path to pin a specific environment.
+PYTHON="${PYTHON:-$(command -v python3 2>/dev/null || true)}"
 
 GHIDRA_HOST="127.0.0.1"
 GHIDRA_PORT=8089

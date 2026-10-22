@@ -1,20 +1,17 @@
 ---
-name: use-ghidra-mcp
-description: Start, stop, restart, and check the Ghidra MCP server powered by ghidra-mcp. Use this skill whenever an agent needs Ghidra MCP for reverse engineering, when the MCP service on port 13337 is unavailable, or when the service lifecycle needs to be managed.
+name: manage-idalib-mcp
+description: Start, stop, restart, and check the IDAlib MCP server powered by idalib-mcp. Use this skill whenever an agent needs IDAlib MCP for reverse engineering, when the MCP service on port 13336 is unavailable, or when the service lifecycle needs to be managed.
 license: Apache-2.0
 metadata:
   author: Haicaji
   version: "1.1"
 ---
 
-# Ghidra MCP
+# IDAlib MCP
 
-Manage the Ghidra MCP service through the scripts bundled with this Skill.
+Manage the IDAlib MCP service through the scripts bundled with this Skill.
 
-The service has two components:
-
-- Ghidra headless server: port `8089`
-- MCP bridge (the MCP endpoint): port `13337`
+The MCP server uses port `13336`.
 
 ## Rules
 
@@ -31,7 +28,7 @@ The service has two components:
 Execute the bundled script:
 
 ```text
-scripts/check-ghidra-mcp.sh
+scripts/check-idalib-mcp.sh
 ```
 
 ## Start
@@ -39,7 +36,7 @@ scripts/check-ghidra-mcp.sh
 Execute the bundled script:
 
 ```text
-scripts/start-ghidra-mcp.sh
+scripts/start-idalib-mcp.sh
 ```
 
 The bundled script handles:
@@ -56,7 +53,7 @@ The bundled script handles:
 Execute the bundled script:
 
 ```text
-scripts/stop-ghidra-mcp.sh
+scripts/stop-idalib-mcp.sh
 ```
 
 ## Restart
@@ -69,13 +66,13 @@ Restart the service only when:
 Execute the bundled stop script first:
 
 ```text
-scripts/stop-ghidra-mcp.sh
+scripts/stop-idalib-mcp.sh
 ```
 
 Then execute the bundled start script:
 
 ```text
-scripts/start-ghidra-mcp.sh
+scripts/start-idalib-mcp.sh
 ```
 
 ## Failure handling

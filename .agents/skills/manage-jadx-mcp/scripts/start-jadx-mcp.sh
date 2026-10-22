@@ -22,8 +22,8 @@ elif [[ $# -eq 1 ]]; then
     TARGET_DIR="$(readlink -f "${TARGET_DIR}")"
 fi
 
-if ! command -v python3 >/dev/null 2>&1; then
-    echo "Error: python3 was not found in PATH." >&2
+if [[ -z "${PYTHON}" || ! -x "${PYTHON}" ]]; then
+    echo "Error: Python interpreter not found: ${PYTHON:-<empty>}. Set PYTHON in config.sh or add python3 to PATH." >&2
     exit 1
 fi
 
@@ -44,7 +44,7 @@ else
     # create the temporary directory for logs and PID file
     mkdir -p "${TMP_DIR}"
 
-    nohup python3 "${JADX_MCP_SERVER}" \
+    nohup "${PYTHON}" "${JADX_MCP_SERVER}" \
         --http \
         --host 0.0.0.0 \
         --port "${PORT}" \

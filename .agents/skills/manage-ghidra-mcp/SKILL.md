@@ -1,19 +1,20 @@
 ---
-name: use-jadx-mcp
-description: Start, stop, restart, and check the JADX MCP server powered by jadx_mcp_server.py. Use this skill whenever an agent needs JADX MCP for reverse engineering, when the MCP service on port 8651 is unavailable, or when the service lifecycle needs to be managed.
+name: manage-ghidra-mcp
+description: Start, stop, restart, and check the Ghidra MCP server powered by ghidra-mcp. Use this skill whenever an agent needs Ghidra MCP for reverse engineering, when the MCP service on port 13337 is unavailable, or when the service lifecycle needs to be managed.
 license: Apache-2.0
 metadata:
   author: Haicaji
   version: "1.1"
 ---
 
-# JADX MCP
+# Ghidra MCP
 
-Manage the JADX MCP service through the scripts bundled with this Skill.
+Manage the Ghidra MCP service through the scripts bundled with this Skill.
 
-The MCP server uses port `8651`. It talks to the JADX-GUI MCP plugin on port `8650`.
+The service has two components:
 
-The bundled start script also launches JADX-GUI with the target APK/DEX files when a target directory is passed; the bundled stop script stops both the MCP server and the JADX-GUI instance it launched.
+- Ghidra headless server: port `8089`
+- MCP bridge (the MCP endpoint): port `13337`
 
 ## Rules
 
@@ -24,23 +25,22 @@ The bundled start script also launches JADX-GUI with the target APK/DEX files wh
 - Do not stop the service unless needed or explicitly requested.
 - Resolve scripts' path relative to this Skill. Do not `cd` into the Skill directory before executing it.
 
+
 ## Check status
 
 Execute the bundled script:
 
 ```text
-scripts/check-jadx-mcp.sh
+scripts/check-ghidra-mcp.sh
 ```
 
 ## Start
 
-Execute the bundled script with an optional target directory containing `*.apk` / `*.dex` files:
+Execute the bundled script:
 
 ```text
-scripts/start-jadx-mcp.sh [TARGET_DIR]
+scripts/start-ghidra-mcp.sh
 ```
-
-When `TARGET_DIR` is given, all `*.apk` and `*.dex` files inside it are opened in JADX-GUI automatically. Pass a directory whenever the user provides one.
 
 The bundled script handles:
 
@@ -50,14 +50,13 @@ The bundled script handles:
 - background process startup
 - PID management
 - startup verification
-- optional JADX-GUI launch with all `*.apk` / `*.dex` files from `TARGET_DIR`
 
 ## Stop
 
 Execute the bundled script:
 
 ```text
-scripts/stop-jadx-mcp.sh
+scripts/stop-ghidra-mcp.sh
 ```
 
 ## Restart
@@ -70,13 +69,13 @@ Restart the service only when:
 Execute the bundled stop script first:
 
 ```text
-scripts/stop-jadx-mcp.sh
+scripts/stop-ghidra-mcp.sh
 ```
 
-Then execute the bundled start script (pass the target directory again if one was used):
+Then execute the bundled start script:
 
 ```text
-scripts/start-jadx-mcp.sh [TARGET_DIR]
+scripts/start-ghidra-mcp.sh
 ```
 
 ## Failure handling

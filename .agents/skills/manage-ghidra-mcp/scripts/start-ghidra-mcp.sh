@@ -14,8 +14,8 @@ if [[ ! -d "${GHIDRA_MCP_DIR}" ]]; then
     exit 1
 fi
 
-if [[ ! -x "${PYTHON}" ]]; then
-    echo "Error: Python executable not found: ${PYTHON}" >&2
+if [[ -z "${PYTHON}" || ! -x "${PYTHON}" ]]; then
+    echo "Error: Python interpreter not found: ${PYTHON:-<empty>}. Set PYTHON in config.sh or add python3 to PATH." >&2
     exit 1
 fi
 

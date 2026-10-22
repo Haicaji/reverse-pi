@@ -48,11 +48,27 @@ if [[ -f "${GUI_PID_FILE}" ]]; then
     GUI_PID="$(cat "${GUI_PID_FILE}")"
 
     if [[ "${GUI_PID}" =~ ^[0-9]+$ ]] && kill -0 "${GUI_PID}" 2>/dev/null; then
-        kill "${GUI_PID}" 2>/dev/null || true
-        echo "JADX-GUI (PID ${GUI_PID}) stopped."
+        # The GUI is launched via setsid, so its PID is also its process group
+        # id: kill the group so no java child survives the wrapper.
+        kill -TERM -- "-${GUI_PID}" 2>/dev/null || kill -TERM "${GUI_PID}" 2>/dev/null || true
+
+        GUI_STOPPED=false
+        for _ in {1..20}; do
+            if ! port_listening "${JADX_PORT}"; then
+                GUI_STOPPED=true
+                break
+            fi
+            sleep 0.5
+        done
+
+        if [[ "${GUI_STOPPED}" == true ]]; then
+            echo "JADX-GUI (PID ${GUI_PID}) stopped."
+        else
+            echo "Warning: port ${JADX_PORT} is still open after stopping JADX-GUI (PID ${GUI_PID})." >&2
+        fi
     fi
 
-    rm -f "${GUI_PID_FILE}"
+    rm -f "${GUI_PID_FILE}" "${GUI_CMD_FILE}"
 fi
 
 if [[ "${STOPPED}" == true ]]; then

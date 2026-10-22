@@ -22,6 +22,11 @@ elif [[ $# -eq 1 ]]; then
     TARGET_DIR="$(readlink -f "${TARGET_DIR}")"
 fi
 
+if ! command -v ss >/dev/null 2>&1; then
+    echo "Error: ss command was not found." >&2
+    exit 1
+fi
+
 if [[ -z "${PYTHON}" || ! -x "${PYTHON}" ]]; then
     echo "Error: Python interpreter not found: ${PYTHON:-<empty>}. Set PYTHON in config.sh or add python3 to PATH." >&2
     exit 1
@@ -90,8 +95,10 @@ if [[ -n "${TARGET_DIR}" ]]; then
         exit 0
     fi
 
-    nohup "${JADX_GUI}" "${FILES[@]}" >"${GUI_LOG_FILE}" 2>&1 </dev/null &
-    echo "${!}" >"${GUI_PID_FILE}"
-    echo "JADX-GUI launched with ${#FILES[@]} file(s) from ${TARGET_DIR}."
-    echo "JADX-GUI PID: $(cat "${GUI_PID_FILE}")"
+    echo "Opening ${#FILES[@]} file(s) from ${TARGET_DIR} in JADX-GUI..."
+
+    if ! launch_jadx_gui "${FILES[@]}"; then
+        echo "Error: JADX-GUI failed to start; ${PORT} is up but the MCP plugin on ${JADX_PORT} is not available." >&2
+        exit 1
+    fi
 fi

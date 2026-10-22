@@ -15,7 +15,7 @@ if [[ ! -d "${GHIDRA_MCP_DIR}" ]]; then
 fi
 
 if [[ -z "${PYTHON}" || ! -x "${PYTHON}" ]]; then
-    echo "Error: Python interpreter not found: ${PYTHON:-<empty>}. Set PYTHON in config.sh or add python3 to PATH." >&2
+    echo "Error: Python interpreter not found: ${PYTHON:-<empty>}. Set python in the [ghidra] table of config.toml or add python3 to PATH." >&2
     exit 1
 fi
 

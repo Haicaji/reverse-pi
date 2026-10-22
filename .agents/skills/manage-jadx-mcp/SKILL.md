@@ -11,25 +11,21 @@ metadata:
 
 Manage the JADX MCP service through the scripts bundled with this Skill.
 
-The MCP server uses port `8651`. It talks to the JADX-GUI MCP plugin on port `8650`.
+The MCP server uses port `8651`. It talks to the JADX-GUI MCP plugin on port `8650`. Both ports, the server/GUI paths, the Python interpreter and the GUI startup timeout are configurable in the `[jadx]` table of the repository-level `config.toml`.
 
 The bundled start script also launches JADX-GUI with the target APK/DEX files when a target directory is passed; the bundled stop script stops both the MCP server and the JADX-GUI instance it launched.
 
 ## Requirements
 
-- `python3` (or `PYTHON` in `config.sh`), `ss`, and a working `java` for JADX-GUI.
+- `python3` (or `python` in the `[jadx]` table of `config.toml`), `ss`, and a working `java` for JADX-GUI.
 - JADX-GUI needs a real graphical session (`DISPLAY` / `WAYLAND_DISPLAY`). Headless hosts are not supported.
 - The GUI is launched with snap-runtime pollution removed automatically: snap-packaged terminals (VS Code, Chromium, ...) export `GTK_PATH`, `GTK_EXE_PREFIX`, `GTK_IM_MODULE_FILE`, `GIO_MODULE_DIR`, `LOCPATH`, ... pointing into `/snap/`, which makes any external JVM die with `symbol lookup error: .../libpthread.so.0: undefined symbol: __libc_pthread_init`. Do not "fix" this by exporting `LD_LIBRARY_PATH`; the script already strips every `/snap/` path fragment before starting JADX-GUI.
 
 ## Runtime state
 
-Logs and PID files live in `${XDG_STATE_HOME:-~/.local/state}/jadx-mcp`, independent of the current directory, so `start`, `check` and `stop` can be run from anywhere.
+Logs and PID files live in `state_dir` from `config.toml` (default `~/.local/state/jadx-mcp`), independent of the current directory, so `start`, `check` and `stop` can be run from anywhere.
 
-Environment knobs (all optional):
-
-- `JADX_MCP_STATE_DIR` – override the state/log directory.
-- `JADX_GUI_START_TIMEOUT` – seconds to wait for the plugin port (default `240`).
-- `JADX_GUI_ENV_KEEP` – space-separated variables that must never be scrubbed.
+User-editable settings live in the `[jadx]` table of the repository root `config.toml`: `port`, `jadx_port`, `mcp_server`, `gui`, `python`, `gui_start_timeout`, `state_dir` and `gui_env_keep`. Values are read only from `config.toml`; environment variables do not override them.
 
 ## Rules
 
@@ -109,8 +105,8 @@ Common failures:
 
 | Symptom | Cause / action |
 | --- | --- |
-| `java: symbol lookup error ... GLIBC_PRIVATE` | snap-injected GTK/LD paths. Should no longer happen; if it does, check `JADX_GUI_ENV_KEEP` and start from a non-snap terminal. |
+| `java: symbol lookup error ... GLIBC_PRIVATE` | snap-injected GTK/LD paths. Should no longer happen; if it does, check `gui_env_keep` and start from a non-snap terminal. |
 | `Error: JADX-GUI exited during startup` | See the printed GUI log tail; usually a bad APK path or an incompatible JDK. |
-| `did not open port 8650 within Ns` | APK is very large or the plugin is disabled in JADX-GUI preferences. Raise `JADX_GUI_START_TIMEOUT`. |
+| `did not open port 8650 within Ns` | APK is very large or the plugin is disabled in JADX-GUI preferences. Raise `gui_start_timeout` in `config.toml`. |
 | `no DISPLAY` / `HeadlessException` in the GUI log | JADX-GUI needs a graphical session; headless hosts are unsupported. |
 | `JADX-GUI MCP plugin is already serving` | Another instance owns port `8650`; run the stop script first. |

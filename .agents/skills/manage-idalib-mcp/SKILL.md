@@ -13,6 +13,10 @@ Manage the IDAlib MCP service through the scripts bundled with this Skill.
 
 The MCP server uses port `13336`.
 
+## Configuration
+
+The server port is configured in the `[idalib]` table of the repository root `config.toml` (`port`). Values are read only from `config.toml`; environment variables do not override them.
+
 ## Rules
 
 - Use the bundled scripts to manage the service.

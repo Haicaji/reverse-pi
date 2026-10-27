@@ -27,7 +27,8 @@ Downloads Google's official Command-line Tools, accepts the SDK licenses
 
 Options:
   --sdk-root PATH          SDK directory chosen by the user (required the first
-                           time; later runs fall back to tools/android-sdk/sdk-root)
+                           time; later runs reuse ANDROID_HOME from the managed
+                           block in the shell rc file)
   --build-tools VERSION    Build Tools version, "latest" (default) or "none"
   --platform API           Install platforms;android-API ("latest" or "none";
                            default: none, not needed for APK inspection)
@@ -36,12 +37,11 @@ Options:
   --bashrc FILE            Shell rc file updated after install; default: ~/.bashrc
   --replace-legacy         Comment out unmanaged ANDROID_HOME/ANDROID_SDK_ROOT/
                            PATH exports while updating the rc file
-  --no-write-shell         Do not touch the shell rc file (only record the path)
+  --no-write-shell         Do not touch the shell rc file (no record is kept)
   --skip-cmdline-tools     Do not download/replace the Command-line Tools
   --skip-packages          Only set up the Command-line Tools
   --skip-platform-tools    Do not install platform-tools (adb)
   --force                  Reinstall Command-line Tools even when current
-  --refresh                Ignore the cached repository index
   --dry-run                Print planned actions without writing to the SDK dir
 
 After a successful install the ANDROID_HOME/ANDROID_SDK_ROOT/PATH block is
@@ -62,7 +62,6 @@ skip_cmdline=0
 skip_packages=0
 skip_platform_tools=0
 force=0
-refresh=0
 dry_run=0
 write_shell=1
 replace_legacy=0
@@ -116,9 +115,6 @@ while (($# > 0)); do
             ;;
         --force|-f)
             force=1
-            ;;
-        --refresh)
-            refresh=1
             ;;
         --dry-run)
             dry_run=1
@@ -177,10 +173,12 @@ case "${platform_req}" in
 esac
 
 TMP_DIR=""
+REPO_XML=""
 cleanup() {
     if [[ -n "${TMP_DIR}" && -d "${TMP_DIR}" ]]; then
         rm -rf "${TMP_DIR}"
     fi
+    [[ -n "${REPO_XML}" ]] && rm -f "${REPO_XML}"
 }
 trap cleanup EXIT
 
@@ -355,13 +353,12 @@ fi
 SDKMANAGER="$(sdkmanager_path)"
 
 log "步骤 3/7：读取 Google 仓库索引"
-REPO_XML=""
 need_index=0
 ((skip_cmdline)) || need_index=1
 [[ "${build_tools_req}" != "none" && ${skip_packages} -eq 0 ]] && need_index=1
 [[ "${platform_req}" != "none" && ${skip_packages} -eq 0 ]] && need_index=1
 if ((need_index)); then
-    REPO_XML="$(fetch_repo_xml "${refresh}")" || exit 1
+    REPO_XML="$(fetch_repo_xml)" || exit 1
 else
     log "跳过（无需仓库索引）"
 fi
@@ -452,7 +449,7 @@ else
     fi
 fi
 
-log "步骤 7/7：验证、记录并写入 shell 配置"
+log "步骤 7/7：验证并写入 shell 配置"
 if ((dry_run)); then
     if ((write_shell)); then
         log "将更新 shell 配置：${bashrc}（ANDROID_HOME=${SDK_ROOT}）"
@@ -470,8 +467,6 @@ fi
 
 verify_ok=0
 verify_tools || verify_ok=$?
-persist_root "${SDK_ROOT}"
-log "已记录 SDK 路径：${ROOT_FILE}"
 log "Android SDK 准备完成：${SDK_ROOT}"
 
 shell_ok=0

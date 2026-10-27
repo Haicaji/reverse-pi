@@ -21,8 +21,8 @@ Usage: check-android-sdk.sh [--sdk-root PATH]
 Checks the JDK, resolves the SDK root and reports versions of
 sdkmanager, adb, aapt, aapt2, apksigner and zipalign.
 
-The SDK root comes from --sdk-root, then the recorded path in
-tools/android-sdk/sdk-root, then a valid ANDROID_SDK_ROOT/ANDROID_HOME.
+The SDK root comes from --sdk-root, then ANDROID_HOME in the managed block of
+~/.bashrc, then a valid ANDROID_SDK_ROOT/ANDROID_HOME variable.
 
 Exit codes:
   0   SDK usable, all core tools present

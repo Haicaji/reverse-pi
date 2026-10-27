@@ -36,14 +36,15 @@ metadata:
 
 ## 运行状态
 
-状态存放在仓库内（已被 `.gitignore` 忽略）：
+本 Skill **不创建任何状态目录**（不会在仓库生成 `tools/android-sdk`，也不会创建缓存目录或日志目录）。
 
-| 路径 | 用途 |
+| 位置 | 说明 |
 | --- | --- |
-| `tools/android-sdk/sdk-root` | 最近一次安装/更新记录的 SDK 路径 |
-| `tools/android-sdk/cache/` | Google 仓库索引缓存（默认 6 小时） |
-| `tools/android-sdk/logs/` | `sdkmanager` 与许可证操作日志 |
+| 用户 shell 配置（默认 `~/.bashrc`）的托管块 | 唯一的持久记录：`ANDROID_HOME` 等环境变量，也是后续查找 SDK 的路径来源 |
+| `${TMPDIR:-/tmp}/android-sdk-*` | 仓库索引与 `sdkmanager` 输出等临时文件；成功即删除，失败时保留并在输出中打印路径 |
 | SDK 内 `cmdline-tools/latest.bak.*` | 替换 Command-line Tools 时在其旁边生成的备份 |
+
+仓库索引每次都重新下载（约几 MB），不落地缓存。托管块所在文件可用 `--bashrc FILE` 或 `ANDROID_SDK_BASHRC` 指定，查找 SDK 时也从同一个文件读取。
 
 环境变量**不存放在仓库或 Pi 专属文件里**，而是写入用户 shell 配置（默认 `~/.bashrc`）的托管块：
 
@@ -58,7 +59,7 @@ export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
 ## 路径解析顺序
 
 1. 命令行 `--sdk-root PATH`
-2. `tools/android-sdk/sdk-root` 记录且目录仍存在
+2. 用户 shell 配置（默认 `~/.bashrc`）托管块中的 `ANDROID_HOME`，且目录仍存在
 3. `ANDROID_SDK_ROOT` / `ANDROID_HOME` 且目录存在
 
 以上都不可用时返回 `10`，并提示向用户询问路径。因此运行 `install-android-sdk.sh` 前，先确认用户已经给出了目标目录。
@@ -94,7 +95,7 @@ scripts/install-android-sdk.sh --sdk-root "/home/<user>/Android/Sdk" --accept-li
 4. 下载官方 ZIP、校验 SHA-1、解压到 `cmdline-tools/latest`（不会多套一层 `cmdline-tools` 目录）；
 5. 按需接受许可证（仅 `--accept-licenses`）；
 6. 安装组件（默认 `platform-tools` + 最新稳定 `build-tools`）；
-7. 验证工具、记录 SDK 路径、写入 shell 配置（`~/.bashrc` 托管块）。
+7. 验证工具、写入 shell 配置（`~/.bashrc` 托管块，同时作为路径记录）。
 
 默认组件：
 
@@ -111,12 +112,11 @@ scripts/install-android-sdk.sh --sdk-root "/home/<user>/Android/Sdk" --accept-li
 | `--accept-licenses` | 向 `sdkmanager --licenses` 自动输入 `y`（需用户同意） |
 | `--bashrc FILE` | 要写入的 shell 配置文件，默认 `~/.bashrc` |
 | `--replace-legacy` | 更新配置时把冲突的非托管 `ANDROID_HOME`/`ANDROID_SDK_ROOT`/`PATH` 行注释掉 |
-| `--no-write-shell` | 不修改 shell 配置（只记录路径） |
+| `--no-write-shell` | 不修改 shell 配置（不留下任何记录） |
 | `--skip-cmdline-tools` | 不下载/替换 Command-line Tools |
 | `--skip-packages` | 只安装 Command-line Tools |
 | `--skip-platform-tools` | 不装 `platform-tools` |
 | `--force` | 版本相同也重新安装 Command-line Tools |
-| `--refresh` | 忽略仓库索引缓存 |
 | `--dry-run` | 只打印计划，不写入 SDK 目录 |
 
 说明：
@@ -208,11 +208,11 @@ scripts/uninstall-android-sdk-package.sh --confirm "build-tools;36.0.0"
 | 退出码 `12`（命令缺失） | 缺少 `curl`/`unzip`/`sha1sum` 等，由用户准备 |
 | 退出码 `13`（许可证） | 先取得用户同意，再传 `--accept-licenses` |
 | 退出码 `14`（目录权限） | 目录无法创建或不可写；本 Skill 不使用 `sudo`，由用户处理权限 |
-| 下载或 SHA-1 校验失败 | 检查网络/代理后重试；`--refresh` 可刷新仓库索引 |
+| 下载或 SHA-1 校验失败 | 检查网络/代理后重试（仓库索引每次都会重新下载，无需清缓存） |
 | `sdkmanager` 输出了 deprecation 警告 | Command-line Tools 23.0 起 `sdkmanager` 是 Android CLI 的包装，警告正常；脚本仍会检查输出中的 `not found` 等错误，不只看退出码 |
 | 找不到 `android`/`avdmanager` 等 | 属于 Command-line Tools 自带命令，确认 `cmdline-tools/latest/bin` 在 PATH 中 |
 | `adb devices` 无设备 | 检查 USB 调试授权、数据线、udev 权限；设备问题由用户处理 |
-| 记录路径失效 | 脚本会忽略不存在的记录路径并返回 `10`，重新询问用户路径 |
+| 托管块中的路径失效 | 脚本会忽略 `~/.bashrc` 托管块里不存在的路径并返回 `10`，重新询问用户路径 |
 
 ## 退出码汇总
 

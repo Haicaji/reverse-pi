@@ -31,7 +31,6 @@ Options:
   --bashrc FILE          Shell rc file refreshed after the update; default ~/.bashrc
   --replace-legacy       Comment out unmanaged ANDROID_HOME/ANDROID_SDK_ROOT exports
   --no-write-shell       Do not touch the shell rc file
-  --refresh              Ignore the cached repository index
   --dry-run              Print planned actions without changing anything
 
 Exit codes: 0 ok | 1 failure | 10 SDK missing | 11 JDK | 13 licenses
@@ -41,7 +40,6 @@ EOF
 accept=0
 cmdline_tools_only=0
 packages_only=0
-refresh=0
 dry_run=0
 write_shell=1
 replace_legacy=0
@@ -65,9 +63,6 @@ while (($# > 0)); do
             ;;
         --packages-only)
             packages_only=1
-            ;;
-        --refresh)
-            refresh=1
             ;;
         --dry-run)
             dry_run=1
@@ -112,9 +107,15 @@ resolve_sdk_root 1 || exit $?
 log "SDK 根目录：${SDK_ROOT}（来源：${SDK_ROOT_SOURCE}）"
 require_sdkmanager || exit $?
 
+# The repository index is downloaded to a temp file and removed on exit; no
+# cache or log directory is created anywhere.
+REPO_XML=""
+cleanup() { [[ -n "${REPO_XML}" ]] && rm -f "${REPO_XML}"; }
+trap cleanup EXIT
+
 if ((packages_only == 0)); then
     log "步骤 1/4：检查 Command-line Tools 更新"
-    REPO_XML="$(fetch_repo_xml "${refresh}")" || exit 1
+    REPO_XML="$(fetch_repo_xml)" || exit 1
     info="$(cmdline_tools_release_info "${REPO_XML}")" || exit 1
     IFS=$'\t' read -r latest_revision _latest_size _latest_sha1 _latest_url <<<"${info}"
     current_revision="$(installed_cmdline_tools_revision || true)"
@@ -127,7 +128,6 @@ if ((packages_only == 0)); then
             log "将运行：install-android-sdk.sh --sdk-root ${SDK_ROOT} --skip-packages"
         else
             args=(--sdk-root "${SDK_ROOT}" --skip-packages --no-write-shell)
-            ((refresh)) && args+=(--refresh)
             if ! "${script_dir}/install-android-sdk.sh" "${args[@]}"; then
                 err "Command-line Tools 更新失败"
                 exit 1

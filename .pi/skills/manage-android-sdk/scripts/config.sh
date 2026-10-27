@@ -4,26 +4,23 @@
 #
 # Notes:
 # - The SDK location is chosen by the user. This Skill never assumes
-#   ~/Android/Sdk; the root comes from --sdk-root, a previously recorded path,
-#   or an ANDROID_SDK_ROOT/ANDROID_HOME value that points to an existing dir.
+#   ~/Android/Sdk; the root comes from --sdk-root, the ANDROID_HOME value in
+#   the managed shell-rc block, or an ANDROID_SDK_ROOT/ANDROID_HOME variable
+#   that points to an existing dir.
+# - No state directory is ever created: the only persistent record is the
+#   managed block in the user's shell rc file. Temporary files (repository
+#   index, sdkmanager output) live in ${TMPDIR:-/tmp} and are removed again.
 # - Only Google's official repository index and downloads are used.
 # - This Skill never installs a JDK and never uses sudo.
 
 set -euo pipefail
 
-_config_script_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd -P)"
-REPO_ROOT="$(cd "${_config_script_dir}/../../../.." && pwd -P)"
-
-# Skill state (gitignored): the recorded SDK root, repository index cache and
-# sdkmanager logs.
-STATE_DIR="${ANDROID_SDK_STATE_DIR:-${REPO_ROOT}/tools/android-sdk}"
-ROOT_FILE="${STATE_DIR}/sdk-root"
-CACHE_DIR="${STATE_DIR}/cache"
-LOG_DIR="${STATE_DIR}/logs"
+# The shell rc file is the only place where state is written.
+RC_FILE="${ANDROID_SDK_BASHRC:-${HOME}/.bashrc}"
+RC_BEGIN_MARK="# >>> reverse-pi android-sdk >>>"
+RC_END_MARK="# <<< reverse-pi android-sdk <<<"
 
 REPO_XML_URL="${ANDROID_SDK_REPO_XML_URL:-https://dl.google.com/android/repository/repository2-3.xml}"
-REPO_XML_NAME="${REPO_XML_URL##*/}"
-REPO_CACHE_TTL="${ANDROID_SDK_REPO_CACHE_TTL:-21600}"
 
 # Command-line Tools 20+ (repository2-3) need JDK 17. Override only when the
 # user explicitly asks to try an older JDK.
@@ -103,15 +100,21 @@ normalize_sdk_path() {
     printf '%s\n' "${path}"
 }
 
+# Read ANDROID_HOME from the managed block in the shell rc file. That block is
+# the only record kept by this Skill; no separate state file exists.
 persisted_root() {
-    [[ -s "${ROOT_FILE}" ]] || return 1
-    head -n 1 "${ROOT_FILE}"
-}
-
-persist_root() {
-    local root="$1"
-    mkdir -p "${STATE_DIR}"
-    printf '%s\n' "${root}" >"${ROOT_FILE}"
+    [[ -r "${RC_FILE}" ]] || return 1
+    awk -v begin="${RC_BEGIN_MARK}" -v end="${RC_END_MARK}" '
+        index($0, begin) { inblock = 1; next }
+        index($0, end) { inblock = 0; next }
+        inblock && /^export ANDROID_HOME=/ {
+            value = $0
+            sub(/^export ANDROID_HOME=/, "", value)
+            gsub(/^"|"$/, "", value)
+            print value
+            exit
+        }
+    ' "${RC_FILE}"
 }
 
 # Resolve the SDK root into SDK_ROOT / SDK_ROOT_SOURCE.
@@ -134,11 +137,12 @@ resolve_sdk_root() {
     if [[ -z "${candidate}" ]]; then
         stored="$(persisted_root || true)"
         if [[ -n "${stored}" ]]; then
-            if [[ -d "${stored}" ]]; then
+            stored="$(normalize_sdk_path "${stored}" || true)"
+            if [[ -n "${stored}" && -d "${stored}" ]]; then
                 candidate="${stored}"
-                SDK_ROOT_SOURCE="记录文件 ${ROOT_FILE}"
+                SDK_ROOT_SOURCE="shell 配置 ${RC_FILE} 托管块"
             else
-                warn "记录文件中的 SDK 路径不存在：${stored}（已忽略）"
+                warn "${RC_FILE} 托管块中的 SDK 路径不存在：${stored}（已忽略）"
             fi
         fi
     fi
@@ -252,30 +256,18 @@ require_sdkmanager() {
     return 0
 }
 
-# Download (or reuse a fresh cache of) Google's repository index and print the
-# local path. Refresh failures fall back to the cached copy.
+# Download Google's repository index into a temporary file and print its path.
+# Nothing is cached on disk; the caller removes the file when done.
 fetch_repo_xml() {
-    local refresh="${1:-0}" cached="${CACHE_DIR}/${REPO_XML_NAME}" tmp now age
+    local tmp
 
-    mkdir -p "${CACHE_DIR}"
-    if ((refresh == 0)) && [[ -s "${cached}" ]] && have stat; then
-        now="$(date +%s)"
-        age=$((now - $(stat -c %Y "${cached}")))
-        if ((age >= 0 && age < REPO_CACHE_TTL)); then
-            printf '%s\n' "${cached}"
-            return 0
-        fi
-    fi
-
-    tmp="${cached}.tmp.$$"
+    tmp="$(mktemp "${TMPDIR:-/tmp}/android-sdk-repo.XXXXXX")" || {
+        err "无法创建临时文件（mktemp）"
+        return 1
+    }
     log "下载 Android SDK 仓库索引：${REPO_XML_URL}"
     if ! curl -fsSL --retry 3 --connect-timeout 15 --max-time 120 -o "${tmp}" "${REPO_XML_URL}"; then
         rm -f "${tmp}"
-        if [[ -s "${cached}" ]]; then
-            warn "无法刷新仓库索引，改用本地缓存：${cached}"
-            printf '%s\n' "${cached}"
-            return 0
-        fi
         err "无法下载仓库索引：${REPO_XML_URL}"
         return 1
     fi
@@ -284,8 +276,7 @@ fetch_repo_xml() {
         err "仓库索引内容异常：${REPO_XML_URL}"
         return 1
     fi
-    mv -f "${tmp}" "${cached}"
-    printf '%s\n' "${cached}"
+    printf '%s\n' "${tmp}"
 }
 
 # Print the complete <remotePackage> block for a package path.
@@ -418,24 +409,35 @@ sdkmanager_output_indicates_failure() {
 }
 
 # Returns sdkmanager's exit status. Requires SDKMANAGER/SDK_ROOT to be set.
+# Output goes to a temporary file: deleted on success, kept (with its path
+# printed) on failure. No log directory is ever created.
 sdkmanager_run() {
     local logfile rc
-    mkdir -p "${LOG_DIR}"
-    logfile="${LOG_DIR}/sdkmanager-$(date +%Y%m%d-%H%M%S)-$$.log"
-    log "sdkmanager 日志：${logfile}"
+    logfile="$(mktemp "${TMPDIR:-/tmp}/android-sdk-sdkmanager.XXXXXX")" || {
+        err "无法创建临时日志文件（mktemp）"
+        return 1
+    }
     set +e
     "${SDKMANAGER}" --sdk_root="${SDK_ROOT}" "$@" 2>&1 | tee "${logfile}"
     rc=${PIPESTATUS[0]}
     set -e
     LAST_SDKMANAGER_LOG="${logfile}"
+    if ((rc == 0)) && ! sdkmanager_output_indicates_failure "${logfile}"; then
+        rm -f "${logfile}"
+        LAST_SDKMANAGER_LOG=""
+    else
+        log "sdkmanager 输出保留在临时文件：${logfile}"
+    fi
     return "${rc}"
 }
 
 # Accept every pending SDK license by feeding "y" to sdkmanager --licenses.
 accept_licenses() {
     local logfile rc
-    mkdir -p "${LOG_DIR}"
-    logfile="${LOG_DIR}/licenses-$(date +%Y%m%d-%H%M%S)-$$.log"
+    logfile="$(mktemp "${TMPDIR:-/tmp}/android-sdk-licenses.XXXXXX")" || {
+        err "无法创建临时日志文件（mktemp）"
+        return 1
+    }
     log "接受 SDK 许可证（sdkmanager --licenses）"
     set +e
     "${SDKMANAGER}" --sdk_root="${SDK_ROOT}" --licenses < <(yes 2>/dev/null) >"${logfile}" 2>&1
@@ -443,10 +445,12 @@ accept_licenses() {
     set -e
     LAST_SDKMANAGER_LOG="${logfile}"
     if ((rc != 0)); then
-        err "接受许可证失败（退出码 ${rc}）；日志：${logfile}"
+        err "接受许可证失败（退出码 ${rc}）；输出：${logfile}"
         tail -n 20 "${logfile}" >&2 || true
         return 1
     fi
+    rm -f "${logfile}"
+    LAST_SDKMANAGER_LOG=""
     log "许可证已接受"
     return 0
 }

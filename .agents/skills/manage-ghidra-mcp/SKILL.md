@@ -16,6 +16,10 @@ The service has two components:
 - Ghidra headless server: port `8089`
 - MCP bridge (the MCP endpoint): port `13337`
 
+## Configuration
+
+User-editable settings live in the `[ghidra]` table of the repository root `config.toml`: `home`, `mcp_dir`, `python`, `host`, `port`, `mcp_host` and `mcp_port`. Values are read only from `config.toml`; environment variables do not override them.
+
 ## Rules
 
 - Use the bundled scripts to manage the service.

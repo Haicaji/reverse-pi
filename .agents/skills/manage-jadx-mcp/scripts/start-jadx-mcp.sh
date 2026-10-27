@@ -28,7 +28,7 @@ if ! command -v ss >/dev/null 2>&1; then
 fi
 
 if [[ -z "${PYTHON}" || ! -x "${PYTHON}" ]]; then
-    echo "Error: Python interpreter not found: ${PYTHON:-<empty>}. Set PYTHON in config.sh or add python3 to PATH." >&2
+    echo "Error: Python interpreter not found: ${PYTHON:-<empty>}. Set python in the [jadx] table of config.toml or add python3 to PATH." >&2
     exit 1
 fi
 

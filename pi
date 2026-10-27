@@ -1,2 +1,11 @@
 #!/usr/bin/env bash
-exec pi --session-dir "$PWD/.pi/sessions" "$@"
+set -euo pipefail
+
+repo_root="$(cd -- "$(dirname -- "$(readlink -f -- "$0")")" && pwd -P)"
+
+cd "$repo_root/workdir"
+exec pi \
+    --session-dir "$repo_root/.pi/sessions" \
+    --skill "$repo_root/.pi/skills" \
+    --mcp-config "$repo_root/.pi/mcp.json" \
+    "$@"

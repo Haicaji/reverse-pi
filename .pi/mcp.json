@@ -6,6 +6,10 @@
         "Authorization": "!d=$PWD; while [ ! -f \"$d/.pi/secrets/delamain.auth\" ] && [ \"$d\" != \"/\" ]; do d=$(dirname \"$d\"); done; cat \"$d/.pi/secrets/delamain.auth\""
       },
       "description": "Headless JADX Android reverse-engineering MCP (delamain): load APK/DEX, decompile, search, xrefs, resources, Frida hooks."
+    },
+    "IDA": {
+      "url": "http://127.0.0.1:8737/mcp",
+      "description": "Official Hex-Rays IDA MCP server (ida-mcp): headless IDA Pro reverse engineering via idalib (decompile, disasm, xrefs, strings, types)."
     }
   }
 }

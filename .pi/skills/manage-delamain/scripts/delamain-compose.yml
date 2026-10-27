@@ -1,0 +1,37 @@
+name: reverse-pi-delamain
+
+services:
+  delamain:
+    image: ${DELAMAIN_IMAGE:?DELAMAIN_IMAGE is required}
+    container_name: reverse-pi-delamain
+    ports:
+      - "127.0.0.1:${DELAMAIN_PORT:-8651}:8651"
+    volumes:
+      - "${DELAMAIN_APK_DIR:?DELAMAIN_APK_DIR is required}:/apks"
+      - "${DELAMAIN_STATE_DIR:?DELAMAIN_STATE_DIR is required}/output:/data/output"
+      - "${DELAMAIN_STATE_DIR:?DELAMAIN_STATE_DIR is required}/indices:/data/indices"
+      - "${DELAMAIN_STATE_DIR:?DELAMAIN_STATE_DIR is required}/config:/data/config:ro"
+    environment:
+      JADX_FILE_ROOT: /apks
+      DELAMAIN_AUTH_TOKENS: ${DELAMAIN_AUTH_TOKENS:?DELAMAIN_AUTH_TOKENS is required}
+      JADX_TRANSFER_MAX_MB: ${JADX_TRANSFER_MAX_MB:-1024}
+      JADX_CACHE_MAX_GB: ${JADX_CACHE_MAX_GB:-50}
+    restart: unless-stopped
+    stop_grace_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python3",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8651/health', timeout=5)",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s

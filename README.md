@@ -1,30 +1,11 @@
 # Reverse Pi
 
-A customized [Pi Agent](https://github.com/earendil-works/pi) tailored to my personal reverse engineering workflow.
+基于 [Pi Agent](https://github.com/earendil-works/pi) 定制的个人逆向工程 Agent
 
-## Quick Start
+## 快速开始
 
-1. Install Pi on Linux (Linux is required).
-2. Review `config.toml` and adjust the tool paths and ports for your machine.
-3. Make the `./pi` script executable: `chmod +x ./pi`.
-4. Run `./pi`.
+1. 在 Linux 上安装 Pi（仅支持 Linux）。
+2. 为 `./pi` 脚本添加可执行权限：`chmod +x ./pi`。
+3. 运行 `./pi`。
 
-The `./pi` launcher runs Pi from `workdir/` so task files stay there, while the repository settings under `.pi/` are still applied: sessions are stored in `.pi/sessions/`, skills are loaded from `.pi/skills`, and MCP servers are loaded from `.pi/mcp.json`.
-
-## Configuration
-
-User-editable tool paths and service settings for the bundled skills live in the repository-level [`config.toml`](./config.toml):
-
-Scripts read these values only from `config.toml`; environment variables do not override them. Values absent from the file fall back to built-in defaults. Path values may start with `~/`.
-
-If `config.toml` is missing, the skill scripts exit with an error. Each skill's `scripts/config.sh` contains the same inline TOML reader, which supports tables, bare keys, strings, integers, booleans and comments. If you change a service port, update `.pi/mcp.json` to match.
-
-## Features
-
-* Automatically launches reverse engineering tools and supports MCP integration (in progress).
-* Standardizes the reverse engineering workflow (in progress).
-* Runs from `workdir/` and stores session history under `.pi/sessions/`. (easy cleanup of reverse engineering records?)
-
-## Planned Features
-
-* Automatic installation of required dependencies. (Maybe it's not necessary?)manage
+`./pi` 启动器会从 `workdir/` 运行 Pi，使任务文件集中在该目录，同时仍然应用 `.pi/` 下的仓库配置：会话保存在 `.pi/sessions/`，Skill 从 `.pi/skills` 加载，MCP 服务器从 `.pi/mcp.json` 加载。

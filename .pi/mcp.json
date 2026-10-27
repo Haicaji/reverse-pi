@@ -1,13 +1,11 @@
 {
-	"mcpServers": {
-		"IDALib-MCP": {
-			"url": "http://127.0.0.1:13336/mcp"
-		},
-		"Jadx-MCP": {
-			"url": "http://127.0.0.1:8651/mcp"
-		},
-		"Ghidra-MCP": {
-			"url": "http://127.0.0.1:13337/mcp"
-		}
-	}
+  "mcpServers": {
+    "Delamain": {
+      "url": "http://127.0.0.1:8651/mcp",
+      "headers": {
+        "Authorization": "!d=$PWD; while [ ! -f \"$d/.pi/secrets/delamain.auth\" ] && [ \"$d\" != \"/\" ]; do d=$(dirname \"$d\"); done; cat \"$d/.pi/secrets/delamain.auth\""
+      },
+      "description": "Headless JADX Android reverse-engineering MCP (delamain): load APK/DEX, decompile, search, xrefs, resources, Frida hooks."
+    }
+  }
 }
